@@ -1,0 +1,272 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define TABLE_SIZE 100
+#define MAX 100
+
+// ================= NODE =================
+typedef struct Node {
+    char date[20];
+    float amount;
+    struct Node *next;
+} Node;
+
+// ================= GLOBALS =================
+Node *head = NULL;
+
+// Stack
+Node *stack[MAX];
+int top = -1;
+
+// Queue
+Node *queue[MAX];
+int front = 0, rear = -1;
+
+// Hash Table
+Node *hashTable[TABLE_SIZE];
+
+// ================= HASH FUNCTION =================
+int hash(char *date) {
+    int sum = 0;
+    for(int i = 0; date[i] != '\0'; i++)
+        sum += date[i];
+
+    return sum % TABLE_SIZE;
+}
+
+// ================= INIT HASH =================
+void initHash() {
+    for(int i = 0; i < TABLE_SIZE; i++)
+        hashTable[i] = NULL;
+}
+
+// ================= ADD SALE =================
+void addSale(char date[], float amount) {
+
+    Node *newNode = (Node*)malloc(sizeof(Node));
+
+    strcpy(newNode->date, date);
+    newNode->amount = amount;
+
+    newNode->next = head;
+    head = newNode;
+
+    // Hash Table Insert
+    int index = hash(date);
+
+    Node *temp = hashTable[index];
+
+    if(temp == NULL) {
+        hashTable[index] = newNode;
+    }
+    else {
+        newNode->next = temp;
+        hashTable[index] = newNode;
+    }
+
+    // Queue Insert
+    if(rear < MAX-1)
+        queue[++rear] = newNode;
+
+    printf("Sale Added Successfully!\n");
+}
+
+// ================= DISPLAY =================
+void displaySales() {
+
+    Node *temp = head;
+
+    if(temp == NULL) {
+        printf("\nNo Records Found\n");
+        return;
+    }
+
+    printf("\nSales Records\n");
+    printf("--------------------------\n");
+
+    while(temp != NULL) {
+        printf("%s  ->  %.2f\n",
+               temp->date,
+               temp->amount);
+
+        temp = temp->next;
+    }
+}
+
+// ================= DELETE =================
+void deleteSale() {
+
+    if(head == NULL) {
+        printf("No Data Available\n");
+        return;
+    }
+
+    Node *temp = head;
+    head = head->next;
+
+    stack[++top] = temp;
+
+    printf("Deleted: %.2f\n", temp->amount);
+}
+
+// ================= UNDO =================
+void undoDelete() {
+
+    if(top == -1) {
+        printf("Nothing To Undo\n");
+        return;
+    }
+
+    Node *temp = stack[top--];
+
+    temp->next = head;
+    head = temp;
+
+    printf("Undo Successful\n");
+}
+
+// ================= SEARCH =================
+void searchSale(char date[]) {
+
+    int index = hash(date);
+
+    Node *temp = hashTable[index];
+
+    while(temp != NULL) {
+
+        if(strcmp(temp->date, date) == 0) {
+            printf("\nRecord Found\n");
+            printf("Date : %s\n", temp->date);
+            printf("Amount : %.2f\n",
+                   temp->amount);
+            return;
+        }
+
+        temp = temp->next;
+    }
+
+    printf("Record Not Found\n");
+}
+
+// ================= PROCESS QUEUE =================
+void processQueue() {
+
+    if(front > rear) {
+        printf("Queue Empty\n");
+        return;
+    }
+
+    printf("\nProcessing Queue\n");
+
+    while(front <= rear) {
+
+        printf("Processed %.2f\n",
+               queue[front]->amount);
+
+        front++;
+    }
+}
+
+// ================= FORECAST =================
+void forecastSales() {
+
+    float sales[MAX];
+    int count = 0;
+
+    Node *temp = head;
+
+    while(temp != NULL && count < MAX) {
+
+        sales[count++] = temp->amount;
+
+        temp = temp->next;
+    }
+
+    if(count < 3) {
+        printf("Need At Least 3 Sales Records\n");
+        return;
+    }
+
+    float forecast =
+        (sales[0] + sales[1] + sales[2]) / 3;
+
+    printf("\nPredicted Next Sale = %.2f\n",
+           forecast);
+}
+
+// ================= MAIN =================
+int main() {
+
+    initHash();
+
+    int choice;
+    char date[20];
+    float amount;
+
+    while(1) {
+
+        printf("\n");
+        printf("===== SALES FORECASTING SYSTEM =====\n");
+        printf("1. Add Sale\n");
+        printf("2. Display Sales\n");
+        printf("3. Delete Sale\n");
+        printf("4. Undo Delete\n");
+        printf("5. Search Sale\n");
+        printf("6. Process Queue\n");
+        printf("7. Forecast Sales\n");
+        printf("8. Exit\n");
+
+        printf("Enter Choice : ");
+        scanf("%d", &choice);
+
+        switch(choice) {
+
+            case 1:
+                printf("Enter Date : ");
+                scanf("%s", date);
+
+                printf("Enter Amount : ");
+                scanf("%f", &amount);
+
+                addSale(date, amount);
+                break;
+
+            case 2:
+                displaySales();
+                break;
+
+            case 3:
+                deleteSale();
+                break;
+
+            case 4:
+                undoDelete();
+                break;
+
+            case 5:
+                printf("Enter Date To Search : ");
+                scanf("%s", date);
+
+                searchSale(date);
+                break;
+
+            case 6:
+                processQueue();
+                break;
+
+            case 7:
+                forecastSales();
+                break;
+
+            case 8:
+                printf("Exiting...\n");
+                exit(0);
+
+            default:
+                printf("Invalid Choice\n");
+        }
+    }
+
+    return 0;
+}
